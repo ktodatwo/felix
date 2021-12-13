@@ -7,8 +7,9 @@ from flask_login.utils import login_required, logout_user
 from werkzeug.urls import url_parse
 
 from app import app, db
+from app.email import send_password_reset_email
 from app.models import Post, User
-from app.forms import EditProfileForm, LoginForm, RegistrationForm, EmptyForm, PostForm
+from app.forms import EditProfileForm, LoginForm, RegistrationForm, EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
 
 
 @app.before_request
@@ -91,12 +92,42 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            send_password_reset_email(user)
+        flash('Check your email for instructions to reset your password')
+        return redirect(url_for('login'))
+    return render_template('reset_password_request.html', title='Reset Password', form=form)
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    user = User.verify_reset_password_token(token)
+    if not user:
+        return redirect(url_for('index'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Your password has been reset.')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html', form=form)
+
+
 @app.route('/user/<username>')
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
-    posts = user.posts.order_by(Post.timestampe.desc()).paginate(page, app.config['POSTS_PER_PAGE'], False)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(page, app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('index', page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('index', page=posts.prev_num) \
