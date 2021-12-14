@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_bootstrap import Bootstrap
 
 
 app = Flask(__name__)
@@ -16,6 +17,7 @@ migrate = Migrate(app, db)
 login = LoginManager(app)
 login.login_view='login'
 mail = Mail(app)
+bootstrap = Bootstrap(app)
 
 
 if not app.debug:
@@ -29,7 +31,7 @@ if not app.debug:
         mail_handler = SMTPHandler(
             mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
             fromaddr='no-reply@' + app.config['MAIL_SERVER'],
-            toaddrs=app.config['ADMINS'], subject='Microblog Failure',
+            toaddrs=app.config['ADMINS'], subject='felix Failure',
             credentials=auth, secure=secure)
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
