@@ -2,3 +2,4 @@
 /.venv-felix
 /logs
 /migrations
+/messages.pot
